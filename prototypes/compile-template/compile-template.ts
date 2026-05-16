@@ -1,6 +1,7 @@
 import nunjucks from 'nunjucks';
 import { join } from 'node:path';
 import { mergeVarSets, readVarSetFromYaml } from '@core/variables';
+import { compileTemplate } from '@core/templates';
 
 const mainVarsPath = join(import.meta.dir, 'main.yaml');
 const additionalVarsPath = join(import.meta.dir, 'additional.yaml');
@@ -22,7 +23,7 @@ nunjucks.configure({
   lstripBlocks: true,
   noCache: true,
 });
-const result = nunjucks.renderString(templateRaw, varSet);
+const result = compileTemplate({ templateText: templateRaw, varSet });
 
 console.log(varSet);
 console.log('\n===========================\n');
