@@ -32,6 +32,8 @@
     ]
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:unit": "bun test",
+    "test:unit:watch": "bun test --watch"
   }
 }
