@@ -1,6 +1,20 @@
-CLI config management tool provides a single interface for managing all the config files on the PC by utilizing a versatile templates rendering system and symlinks similar to GNU Stow.
+CLI config management tool `moth` provides a single interface for managing all the config files on the PC by utilizing a versatile templates rendering system and symlinks similar to GNU Stow.
 
 # Key features
+
+A lot of things listed here are plans and not yet implemented, so a lot can change.
+
+## Core Logic
+Tool operates with `~/.moth/` dir, where it stores all the modules and a config file.
+Each directory in `~/.moth/` is a separate module (explained later). `~/.moth/config.yaml` contains information about the target locations where each module has to be "stowed" to (in terms of GNU Stow). It is also supposed to contain conflict resolution rules and other configs, which for now are not defined yet.
+
+Also `~/.moth/` contains a `.compiled/` dir, that is created after compiling any module (and persists after that). It combines compiled files from all the modules that are currently enabled for syncing with already calculated paths (using info from `config.yaml`).
+
+After `.compiled` is prepared, `moth` creates synlinks in the target dirs to compiled files in a GNU Stow fashion, but **without** stashing entire dirs -- only specific files. If file with the same name already exists in the target direction, error is thrown. More details in "Conflict Resolution" section.
+Compiled files must be read only to prevent accidental editing of compiled file directly.
+
+Also `~/.moth/` should store some "state" file about what symlinks are currently "controlled" by the tool (basically it's a serialized state of the `~/.moth/.compiled` dir before the last sync). It's needed to remove "zombie" symlinks from the system that do not point to any file anymore. 
+**Important!**: some other logic without explicit "tracking" file can be used, probably smth like deleting existing symlinks before the syncing and recreating only needed ones after recocmpiling.
 
 ## Modules
 
