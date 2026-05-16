@@ -1,4 +1,5 @@
 mockNumber: 42
+mockNumberZero: 0
 mockString: Hello world
 mockBool: true
 
