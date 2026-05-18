@@ -33,7 +33,10 @@ For example, separate module for the templates processing, separate one for the 
 This rules are non-negotiables and must be followed all the time:
 - **KISS**: Keep It Simple, Stupid. Implementation must be simple and straight to the point
 - **No bloat**: Do not overcomplicate code with excessive checks, validations, fallbacks, etc., especially when data in the piece of code in question is already clean.
-- In imports use aliases from `tsconfig` instead of using `../`
+- In imports use aliases from `tsconfig` instead of using `../`.
+- If function takes several arguments, prefer collecting them in a single arguments object.
+- If some type is used only once and is not supposed to use anywhere else by its semantics, do not introduce it. For example, when you aggregate function artuments into a single arguments object, and that object type is used only for this function declaration, you do not need this type.
 
 # Non-Negotiable Rules
+- Do not implement/change tests unless it's explicitly requested.
 - **Never** change any files from `docs/` dir. If you fine errors or inconsistensies in it, let the user know, but never change anything without a direct command to do that.
