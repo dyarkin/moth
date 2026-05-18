@@ -1,5 +1,6 @@
 # Context
-This project is a CLI tool called "Moth" for managing config files on a PC.
+CLI config management tool `moth` provides a single interface for managing all the config files on the PC by utilizing a versatile templates rendering system and symlinks similar to GNU Stow.
+
 It features the following functionality (not all of that may be yet implemented):
 - Splitting all configs into independant "modules"
 - Compiling config files from "templates", with variables interpolation
@@ -7,9 +8,9 @@ It features the following functionality (not all of that may be yet implemented)
 - "Presets" that allow to switch between different sets of variables and values.
 - "Preset groups" that allow to enabled only one preset in group, disabling another already enabled one, which brings an ability to create multi-layer and versatile configs, usable between machines and environments.
 
-For more information on project purpose, ideas and features, refer to `SPEC.md`.
-You may also refer to `ROADMAP.md` to see the development milestones and their goals.
+For more information on project purpose, ideas and features, refer to `docs/`, however, not everything there may be implemented at this point, so use it as description of our intent.
 
+You may also refer to `ROADMAP.md` to see the development milestones and their goals.
 
 # Project structure
 Project is split into several layers:
@@ -32,3 +33,7 @@ For example, separate module for the templates processing, separate one for the 
 This rules are non-negotiables and must be followed all the time:
 - **KISS**: Keep It Simple, Stupid. Implementation must be simple and straight to the point
 - **No bloat**: Do not overcomplicate code with excessive checks, validations, fallbacks, etc., especially when data in the piece of code in question is already clean.
+- In imports use aliases from `tsconfig` instead of using `../`
+
+# Non-Negotiable Rules
+- **Never** change any files from `docs/` dir. If you fine errors or inconsistensies in it, let the user know, but never change anything without a direct command to do that.
