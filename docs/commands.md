@@ -36,3 +36,19 @@ Example:
 ```sh
 bun src/main.ts module-init zsh
 ```
+
+### `moth module-vars <moduleName>`
+
+Reads all variables files in the module and prints merged variables.
+
+Behavior:
+- Reads every `.yaml` file directly under `<moduleName>/variables/`.
+- Merges all parsed YAML objects into one final variables object.
+- Merge order is undefined.
+- Prints merged variables as YAML to stdout.
+
+Example:
+
+```sh
+bun src/main.ts module-vars zsh
+```
