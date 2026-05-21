@@ -23,10 +23,13 @@ const buildTimeMothDirName =
   typeof __MOTH_DIR_NAME__ === 'undefined' ? undefined : __MOTH_DIR_NAME__;
 const buildTimeMothDirPath =
   typeof __MOTH_DIR_PATH__ === 'undefined' ? undefined : __MOTH_DIR_PATH__;
+const runtimeMothDirName = process.env.MOTH_DIR_NAME?.trim() || undefined;
+const runtimeMothDirPath = process.env.MOTH_DIR_PATH?.trim() || undefined;
 
-export const MOTH_DIR_NAME = buildTimeMothDirName ?? DEFAULT_MOTH_DIR_NAME;
+export const MOTH_DIR_NAME =
+  buildTimeMothDirName ?? runtimeMothDirName ?? DEFAULT_MOTH_DIR_NAME;
 export const MOTH_DIR_PATH =
-  buildTimeMothDirPath ?? join(homedir(), MOTH_DIR_NAME);
+  buildTimeMothDirPath ?? runtimeMothDirPath ?? join(homedir(), MOTH_DIR_NAME);
 
 export function resolveMothPath(...pathSegments: string[]): string {
   return resolvePathInsideDir(MOTH_DIR_PATH, ...pathSegments);
