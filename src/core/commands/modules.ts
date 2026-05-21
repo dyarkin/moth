@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import YAML from 'yaml';
 import { listModules, scaffoldModule } from '@core/modules';
+import { readModuleTemplatesTree } from '@core/templates';
 import { readModuleVariables } from '@core/variables';
 import { MOTH_DIR_PATH } from '@shared/moth-dir';
 
@@ -37,5 +38,13 @@ export function registerModulesCommand(program: Command): void {
       const variables = await readModuleVariables(moduleName);
       console.log(variables);
       console.log(YAML.stringify(variables).trimEnd());
+    });
+
+  program
+    .command('module-templates-tree <moduleName>')
+    .description('Read and print templates/ tree for a module')
+    .action(async (moduleName: string) => {
+      const templatesTree = await readModuleTemplatesTree(moduleName);
+      console.log(YAML.stringify(templatesTree).trimEnd());
     });
 }
