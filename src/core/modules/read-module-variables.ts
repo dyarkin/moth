@@ -1,12 +1,12 @@
-import { MODULE_VARIABLES_DIR_NAME } from '@core/modules/consts';
+import { join } from 'node:path';
+import { mergeVarSets, readVarSetFromYaml } from '@core/variables';
 import { listMothDir, resolveMothPath } from '@shared/moth-dir';
-import { mergeVarSets } from './merge-var-sets';
-import { readVarSetFromYaml } from './read-variables';
-import type { VarSet } from './types';
+import { MODULE_VARIABLES_DIR_NAME } from './consts';
+import type { VarSet } from '@core/variables';
 
 export async function readModuleVariables(moduleName: string): Promise<VarSet> {
   const { files } = await listMothDir(
-    `${moduleName}/${MODULE_VARIABLES_DIR_NAME}`,
+    join(moduleName, MODULE_VARIABLES_DIR_NAME),
   );
   const yamlFilePaths = files
     .filter((fileName) => fileName.endsWith('.yaml'))

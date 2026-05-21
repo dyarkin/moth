@@ -1,28 +1,14 @@
 import { join } from 'node:path';
-import { MODULE_TEMPLATES_DIR_NAME } from '@core/modules/consts';
 import { listMothDir, readMothTextFile } from '@shared/moth-dir';
 import type {
   ModuleTemplatesDirectoryTreeItemDir,
   ModuleTemplatesDirectoryTreeItemTemplate,
-  ModuleTemplatesTreeItem,
 } from './types';
 
 // TODO:
 // 1. reads everything to memory, should optimize in case of large modules
 // 2. find a way to deal with binary files
-export async function readModuleTemplatesTree(
-  moduleName: string,
-): Promise<ModuleTemplatesTreeItem[]> {
-  const templatesRelativePath = join(moduleName, MODULE_TEMPLATES_DIR_NAME);
-  const templatesRoot = await readTemplatesDirectoryTree({
-    name: MODULE_TEMPLATES_DIR_NAME,
-    relativePath: templatesRelativePath,
-  });
-
-  return templatesRoot.children;
-}
-
-async function readTemplatesDirectoryTree({
+export async function readTemplatesDirectoryTree({
   name,
   relativePath,
 }: {

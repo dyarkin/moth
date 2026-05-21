@@ -1,14 +1,17 @@
 import type { Command } from 'commander';
 import YAML from 'yaml';
 import { MODULE_COMPILED_DIR_NAME } from '@core/modules/consts';
-import { listModules, scaffoldModule } from '@core/modules';
+import {
+  listModules,
+  readModuleTemplatesTree,
+  readModuleVariables,
+  scaffoldModule,
+} from '@core/modules';
 import {
   compileTemplatesTreeItems,
-  readModuleTemplatesTree,
   writeTemplatesTreeToDir,
 } from '@core/templates';
 import { removePath } from '@lib/util';
-import { readModuleVariables } from '@core/variables';
 import { MOTH_DIR_PATH, resolveMothPath } from '@shared/moth-dir';
 
 export function registerModulesCommand(program: Command): void {
