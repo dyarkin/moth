@@ -1,4 +1,5 @@
 import { ensureDirExists } from '@lib/util';
+import { MothError } from '@shared/errors';
 import {
   ensureMothDirExists,
   mothPathExists,
@@ -15,7 +16,9 @@ export async function scaffoldModule(moduleName: string): Promise<string> {
   await ensureMothDirExists();
 
   if (await mothPathExists(moduleName)) {
-    throw new Error(`Module with such name already exists: ${moduleName}`);
+    throw new MothError({
+      message: `Module with such name already exists: ${moduleName}`,
+    });
   }
 
   const modulePath = resolveMothPath(moduleName);
