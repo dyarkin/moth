@@ -1,6 +1,7 @@
 import { MODULE_COMPILED_DIR_NAME } from './consts';
 import { readModuleTemplatesTree } from './read-module-templates-tree';
 import { readModuleVariables } from './read-module-variables';
+import { readModuleSnippets } from '@core/snippets';
 import {
   compileTemplatesTreeItems,
   writeTemplatesTreeToDir,
@@ -11,9 +12,11 @@ import { resolveMothPath } from '@shared/moth-dir';
 export async function compileModule(moduleName: string): Promise<string> {
   const templatesTree = await readModuleTemplatesTree(moduleName);
   const moduleVariables = await readModuleVariables(moduleName);
+  const moduleSnippets = await readModuleSnippets(moduleName);
   const compiledTemplatesTree = compileTemplatesTreeItems({
     items: templatesTree,
     varSet: moduleVariables,
+    snippets: moduleSnippets,
   });
   const compiledDirPath = resolveMothPath(moduleName, MODULE_COMPILED_DIR_NAME);
 
