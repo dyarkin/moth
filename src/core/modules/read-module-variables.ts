@@ -1,8 +1,8 @@
 import { join } from 'node:path';
+import { readModuleEnabledPresetsVariables } from '@core/presets';
 import { mergeVarSets, readVarSetFromYaml } from '@core/variables';
 import { listMothDir, resolveMothPath } from '@shared/moth-dir';
 import { MODULE_VARIABLES_DIR_NAME } from './consts';
-import { readModuleEnabledPresetsVariables } from './read-module-presets';
 import type { VarSet } from '@core/variables';
 
 export async function readModuleVariables(moduleName: string): Promise<VarSet> {

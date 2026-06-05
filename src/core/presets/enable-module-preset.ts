@@ -1,8 +1,8 @@
-import { readModuleLocalState } from './read-module-local-state';
-import { resolveModulePresetPath } from './read-module-presets';
-import { writeModuleLocalState } from './write-module-local-state';
+import { readModuleLocalState } from '@core/modules/read-module-local-state';
+import { writeModuleLocalState } from '@core/modules/write-module-local-state';
 import { pathExists } from '@lib/util';
 import { MothError } from '@shared/errors';
+import { resolveModulePresetPath } from './read-module-presets';
 
 // AITODO: I think we need to refactor this function on several levels:
 // 1. it should take argument for the type operation: `enable` | `disable`, and because of that renamed to `switchModulePreset`

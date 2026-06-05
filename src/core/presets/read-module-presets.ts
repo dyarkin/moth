@@ -1,6 +1,6 @@
 import { basename, extname, join } from 'node:path';
-import { MODULE_PRESETS_DIR_NAME } from './consts';
-import { readModuleLocalState } from './read-module-local-state';
+import { MODULE_PRESETS_DIR_NAME } from '@core/modules/consts';
+import { readModuleLocalState } from '@core/modules/read-module-local-state';
 import { mergeVarSets, readVarSetFromYaml } from '@core/variables';
 import { pathExists, resolvePathInsideDir } from '@lib/util';
 import { listMothDir, mothPathExists, resolveMothPath } from '@shared/moth-dir';

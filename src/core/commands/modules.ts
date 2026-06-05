@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import YAML from 'yaml';
+import { enableModulePreset } from '@core/presets';
 import {
-  enableModulePreset,
   listModules,
   readModuleTemplatesTree,
   readModuleVariables,
