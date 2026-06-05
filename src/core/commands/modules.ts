@@ -1,12 +1,20 @@
 import type { Command } from 'commander';
 import YAML from 'yaml';
-import { enableModulePreset } from '@core/presets';
+import {
+  resolveModulePresetPath,
+  switchModulePreset,
+  type PresetSwitchOperation,
+} from '@core/presets';
 import {
   listModules,
+  readModuleLocalState,
   readModuleTemplatesTree,
   readModuleVariables,
   scaffoldModule,
+  writeModuleLocalState,
 } from '@core/modules';
+import { pathExists } from '@lib/util';
+import { MothError } from '@shared/errors';
 import { MOTH_DIR_PATH } from '@shared/moth-dir';
 
 export function registerModulesCommand(program: Command): void {
@@ -44,17 +52,30 @@ export function registerModulesCommand(program: Command): void {
       console.log(YAML.stringify(variables).trimEnd());
     });
 
-  // AITODO: Also need a command for disabling a preset. And apply refactor described in `enableModulePreset` comments
   program
     .command('module-preset-enable <moduleName> <presetName>')
     .description('Enable a preset for a module')
     .action(async (moduleName: string, presetName: string) => {
-      await enableModulePreset({
+      await switchModulePresetInLocalState({
         moduleName,
         presetName,
+        operation: 'enable',
       });
 
       console.log(`Preset enabled: ${moduleName}/${presetName}`);
+    });
+
+  program
+    .command('module-preset-disable <moduleName> <presetName>')
+    .description('Disable a preset for a module')
+    .action(async (moduleName: string, presetName: string) => {
+      await switchModulePresetInLocalState({
+        moduleName,
+        presetName,
+        operation: 'disable',
+      });
+
+      console.log(`Preset disabled: ${moduleName}/${presetName}`);
     });
 
   program
@@ -64,4 +85,42 @@ export function registerModulesCommand(program: Command): void {
       const templatesTree = await readModuleTemplatesTree(moduleName);
       console.log(YAML.stringify(templatesTree).trimEnd());
     });
+}
+
+// AITODO: i prefer not having helper functions in the same file with commands declaration
+async function switchModulePresetInLocalState({
+  moduleName,
+  presetName,
+  operation,
+}: {
+  moduleName: string;
+  presetName: string;
+  operation: PresetSwitchOperation;
+}): Promise<void> {
+  const presetPath = resolveModulePresetPath({
+    moduleName,
+    presetName,
+  });
+
+  if (!(await pathExists(presetPath))) {
+    throw new MothError({
+      message: `Missing preset "${presetName}" in module ${moduleName}: ${presetPath}`,
+    });
+  }
+
+  const state = await readModuleLocalState(moduleName);
+  const nextState = switchModulePreset({
+    state,
+    presetName,
+    operation,
+  });
+
+  if (nextState === state) {
+    return;
+  }
+
+  await writeModuleLocalState({
+    moduleName,
+    state: nextState,
+  });
 }
