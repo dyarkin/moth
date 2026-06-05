@@ -1,21 +1,13 @@
 import type { Command } from 'commander';
 import YAML from 'yaml';
 import {
-  resolveModulePresetPath,
-  switchModulePreset,
-  type PresetSwitchOperation,
-} from '@core/presets';
-import {
   listModules,
-  readModuleLocalState,
   readModuleTemplatesTree,
   readModuleVariables,
   scaffoldModule,
-  writeModuleLocalState,
 } from '@core/modules';
-import { pathExists } from '@lib/util';
-import { MothError } from '@shared/errors';
 import { MOTH_DIR_PATH } from '@shared/moth-dir';
+import { switchModulePresetInLocalState } from './switch-module-preset-in-local-state';
 
 export function registerModulesCommand(program: Command): void {
   program
@@ -85,42 +77,4 @@ export function registerModulesCommand(program: Command): void {
       const templatesTree = await readModuleTemplatesTree(moduleName);
       console.log(YAML.stringify(templatesTree).trimEnd());
     });
-}
-
-// AITODO: i prefer not having helper functions in the same file with commands declaration
-async function switchModulePresetInLocalState({
-  moduleName,
-  presetName,
-  operation,
-}: {
-  moduleName: string;
-  presetName: string;
-  operation: PresetSwitchOperation;
-}): Promise<void> {
-  const presetPath = resolveModulePresetPath({
-    moduleName,
-    presetName,
-  });
-
-  if (!(await pathExists(presetPath))) {
-    throw new MothError({
-      message: `Missing preset "${presetName}" in module ${moduleName}: ${presetPath}`,
-    });
-  }
-
-  const state = await readModuleLocalState(moduleName);
-  const nextState = switchModulePreset({
-    state,
-    presetName,
-    operation,
-  });
-
-  if (nextState === state) {
-    return;
-  }
-
-  await writeModuleLocalState({
-    moduleName,
-    state: nextState,
-  });
 }
