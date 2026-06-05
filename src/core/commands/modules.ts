@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import YAML from 'yaml';
 import {
+  enableModulePreset,
   listModules,
   readModuleTemplatesTree,
   readModuleVariables,
@@ -35,12 +36,25 @@ export function registerModulesCommand(program: Command): void {
   program
     .command('module-vars <moduleName>')
     .description(
-      'Read and print merged module variables from variables/*.yaml files',
+      'Read and print merged module variables including enabled presets',
     )
     .action(async (moduleName: string) => {
       const variables = await readModuleVariables(moduleName);
       console.log(variables);
       console.log(YAML.stringify(variables).trimEnd());
+    });
+
+  // AITODO: Also need a command for disabling a preset. And apply refactor described in `enableModulePreset` comments
+  program
+    .command('module-preset-enable <moduleName> <presetName>')
+    .description('Enable a preset for a module')
+    .action(async (moduleName: string, presetName: string) => {
+      await enableModulePreset({
+        moduleName,
+        presetName,
+      });
+
+      console.log(`Preset enabled: ${moduleName}/${presetName}`);
     });
 
   program

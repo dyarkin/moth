@@ -2,4 +2,8 @@ export * from './list-modules';
 export * from './scaffold-module';
 export * from './read-module-templates-tree';
 export * from './read-module-variables';
+export * from './read-module-local-state';
+export * from './write-module-local-state';
+export * from './read-module-presets';
+export * from './enable-module-preset';
 export * from './compile-module';
