@@ -50,7 +50,7 @@ export function registerModulesCommand(program: Command): void {
     .action(async (moduleName: string, presetName: string) => {
       await switchModulePresetInLocalState({
         moduleName,
-        presetName,
+        presetFullNameInput: presetName,
         operation: 'enable',
       });
 
@@ -63,7 +63,7 @@ export function registerModulesCommand(program: Command): void {
     .action(async (moduleName: string, presetName: string) => {
       await switchModulePresetInLocalState({
         moduleName,
-        presetName,
+        presetFullNameInput: presetName,
         operation: 'disable',
       });
 

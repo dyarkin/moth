@@ -1,5 +1,6 @@
 import {
-  resolveModulePresetPath,
+  parsePresetFullNameToParts,
+  resolveModulePresetFilePathFromFullName,
   switchModulePreset,
   type PresetSwitchOperation,
 } from '@core/presets';
@@ -9,28 +10,29 @@ import { MothError } from '@shared/errors';
 
 export async function switchModulePresetInLocalState({
   moduleName,
-  presetName,
+  presetFullNameInput,
   operation,
 }: {
   moduleName: string;
-  presetName: string;
+  presetFullNameInput: string;
   operation: PresetSwitchOperation;
 }): Promise<void> {
-  const presetPath = resolveModulePresetPath({
+  const { presetFullName } = parsePresetFullNameToParts(presetFullNameInput);
+  const presetFilePath = resolveModulePresetFilePathFromFullName({
     moduleName,
-    presetName,
+    presetFullName,
   });
 
-  if (!(await pathExists(presetPath))) {
+  if (!(await pathExists(presetFilePath))) {
     throw new MothError({
-      message: `Missing preset "${presetName}" in module ${moduleName}: ${presetPath}`,
+      message: `Missing preset "${presetFullName}" in module ${moduleName}: ${presetFilePath}`,
     });
   }
 
   const state = await readModuleLocalState(moduleName);
   const { nextState, hasChanged } = switchModulePreset({
     state,
-    presetName,
+    presetFullName,
     operation,
   });
 
