@@ -7,6 +7,7 @@ import {
   scaffoldModule,
 } from '@core/modules';
 import { MOTH_DIR_PATH } from '@shared/moth-dir';
+import { switchModulePresetInLocalState } from './switch-module-preset-in-local-state';
 
 export function registerModulesCommand(program: Command): void {
   program
@@ -35,12 +36,38 @@ export function registerModulesCommand(program: Command): void {
   program
     .command('module-vars <moduleName>')
     .description(
-      'Read and print merged module variables from variables/*.yaml files',
+      'Read and print merged module variables including enabled presets',
     )
     .action(async (moduleName: string) => {
       const variables = await readModuleVariables(moduleName);
       console.log(variables);
       console.log(YAML.stringify(variables).trimEnd());
+    });
+
+  program
+    .command('module-preset-enable <moduleName> <presetName>')
+    .description('Enable a preset for a module')
+    .action(async (moduleName: string, presetName: string) => {
+      await switchModulePresetInLocalState({
+        moduleName,
+        presetFullNameInput: presetName,
+        operation: 'enable',
+      });
+
+      console.log(`Preset enabled: ${moduleName}/${presetName}`);
+    });
+
+  program
+    .command('module-preset-disable <moduleName> <presetName>')
+    .description('Disable a preset for a module')
+    .action(async (moduleName: string, presetName: string) => {
+      await switchModulePresetInLocalState({
+        moduleName,
+        presetFullNameInput: presetName,
+        operation: 'disable',
+      });
+
+      console.log(`Preset disabled: ${moduleName}/${presetName}`);
     });
 
   program

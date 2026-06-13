@@ -8,6 +8,7 @@ import {
 } from '@shared/moth-dir';
 import {
   MODULE_MANIFEST_FILE_NAME,
+  MODULE_PRESETS_DIR_NAME,
   MODULE_SNIPPETS_DIR_NAME,
   MODULE_TEMPLATES_DIR_NAME,
   MODULE_VARIABLES_DIR_NAME,
@@ -31,6 +32,7 @@ export async function scaffoldModule(moduleName: string): Promise<string> {
   });
   await ensureDirExists(resolveMothPath(moduleName, MODULE_TEMPLATES_DIR_NAME));
   await ensureDirExists(resolveMothPath(moduleName, MODULE_VARIABLES_DIR_NAME));
+  await ensureDirExists(resolveMothPath(moduleName, MODULE_PRESETS_DIR_NAME));
   await ensureDirExists(resolveMothPath(moduleName, MODULE_SNIPPETS_DIR_NAME));
 
   return modulePath;
