@@ -5,3 +5,5 @@ export * from './read-module-variables';
 export * from './read-module-local-state';
 export * from './write-module-local-state';
 export * from './compile-module';
+export * from './module-manifest';
+export * from './read-module-template-roles';
