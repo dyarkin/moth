@@ -11,7 +11,7 @@ import {
   listModules,
   readModuleTemplateRoles,
 } from '@core/modules';
-import { ensureDirExists, isDirectory, pathExists } from '@lib/util';
+import { ensureDirExists, isDirectory } from '@lib/util';
 import {
   ModulesTargetFileConflictError,
   ModulesTargetPathNotDirectoryError,
@@ -20,9 +20,7 @@ import {
 import { removeMothPath, resolveMothPath } from '@shared/moth-dir';
 
 type CompiledFileContribution = {
-  moduleName: string;
   sourceFilePath: string;
-  relativeTemplatePath: string;
   targetFilePath: string;
   role: ModuleTemplateRole;
 };
@@ -54,7 +52,6 @@ export async function combineModulesCompiled({
     });
 
     assertNoTargetPathDirectoryConflicts(contributions);
-    assertNoTargetFileConflicts(contributions);
 
     await writeCompiledFileContributions(contributions);
   } catch (e) {
@@ -139,9 +136,7 @@ async function collectModuleCompiledFileContributions({
   );
 
   return relativeTemplatePaths.map((relativeTemplatePath) => ({
-    moduleName,
     sourceFilePath: join(sourceDirPath, relativeTemplatePath),
-    relativeTemplatePath,
     targetFilePath: join(targetDirPath, relativeTemplatePath),
     role: templateRoles[relativeTemplatePath] ?? 'base',
   }));
@@ -197,33 +192,87 @@ function assertNoTargetPathDirectoryConflicts(
   }
 }
 
-function assertNoTargetFileConflicts(
-  contributions: CompiledFileContribution[],
-): void {
-  const targetFilePaths = new Set<string>();
-
-  for (const contribution of contributions) {
-    if (targetFilePaths.has(contribution.targetFilePath)) {
-      throw new ModulesTargetFileConflictError(contribution.targetFilePath);
-    }
-
-    targetFilePaths.add(contribution.targetFilePath);
-  }
-}
-
 async function writeCompiledFileContributions(
   contributions: CompiledFileContribution[],
 ): Promise<void> {
-  for (const contribution of contributions) {
-    await ensureDirExists(dirname(contribution.targetFilePath));
+  const contributionsByTargetPath =
+    groupContributionsByTargetPath(contributions);
 
-    if (await pathExists(contribution.targetFilePath)) {
-      throw new ModulesTargetFileConflictError(contribution.targetFilePath);
-    }
-
+  for (const [
+    targetFilePath,
+    targetContributions,
+  ] of contributionsByTargetPath) {
+    await ensureDirExists(dirname(targetFilePath));
     await writeFile(
-      contribution.targetFilePath,
-      await readFile(contribution.sourceFilePath),
+      targetFilePath,
+      await readCombinedContributionContent({
+        targetFilePath,
+        contributions: targetContributions,
+      }),
     );
   }
+}
+
+function groupContributionsByTargetPath(
+  contributions: CompiledFileContribution[],
+): Map<string, CompiledFileContribution[]> {
+  const contributionsByTargetPath = new Map<
+    string,
+    CompiledFileContribution[]
+  >();
+
+  for (const contribution of contributions) {
+    const targetContributions =
+      contributionsByTargetPath.get(contribution.targetFilePath) ?? [];
+
+    targetContributions.push(contribution);
+    contributionsByTargetPath.set(
+      contribution.targetFilePath,
+      targetContributions,
+    );
+  }
+
+  return contributionsByTargetPath;
+}
+
+async function readCombinedContributionContent({
+  targetFilePath,
+  contributions,
+}: {
+  targetFilePath: string;
+  contributions: CompiledFileContribution[];
+}): Promise<string | Buffer> {
+  const baseContributions = contributions.filter(
+    (contribution) => contribution.role === 'base',
+  );
+  const fragmentContributions = contributions.filter(
+    (contribution) => contribution.role === 'fragment',
+  );
+
+  if (baseContributions.length > 1) {
+    throw new ModulesTargetFileConflictError(targetFilePath);
+  }
+
+  if (baseContributions.length === 1 && fragmentContributions.length === 0) {
+    return readFile(baseContributions[0]!.sourceFilePath);
+  }
+
+  const orderedContributions = [...baseContributions, ...fragmentContributions];
+  const parts = await Promise.all(
+    orderedContributions.map((contribution) =>
+      readFile(contribution.sourceFilePath, 'utf8'),
+    ),
+  );
+
+  return joinPartsWithNewlineBoundaries(parts);
+}
+
+function joinPartsWithNewlineBoundaries(parts: string[]): string {
+  return parts.reduce((combinedContent, part, index) => {
+    if (index === 0 || combinedContent.endsWith('\n')) {
+      return `${combinedContent}${part}`;
+    }
+
+    return `${combinedContent}\n${part}`;
+  }, '');
 }
