@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
-import { combineModulesCompiled } from '@core/sync';
-import { MothError } from '@shared/errors';
+import { printApplyCompiledResult } from '@core/commands/apply';
+import { applyCompiled, combineModulesCompiled } from '@core/sync';
 
 type SyncCommandOptions = {
   prepare?: boolean;
@@ -14,17 +14,16 @@ export function registerSyncCommand(program: Command): void {
     .option('--prepare', 'Only prepare root .compiled directory')
     .option('--no-compilation', 'Do not recompile modules before preparing')
     .action(async (options: SyncCommandOptions) => {
-      if (!options.prepare) {
-        throw new MothError({
-          message: 'sync without --prepare is not implemented yet',
-        });
-      }
-
       const compiledDirPath = await combineModulesCompiled({
         // Commander negated flags: default is `true`; passing `--no-compilation` sets it to `false`.
         shouldCompile: options.compilation,
       });
 
-      console.log(`Sync prepared: ${compiledDirPath}`);
+      if (options.prepare) {
+        console.log(`Sync prepared: ${compiledDirPath}`);
+        return;
+      }
+
+      printApplyCompiledResult(await applyCompiled());
     });
 }

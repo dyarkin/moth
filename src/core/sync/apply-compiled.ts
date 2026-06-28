@@ -1,19 +1,30 @@
 import type { Dirent } from 'node:fs';
-import { lstat, readlink, readdir, stat } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  readlink,
+  readdir,
+  stat,
+  symlink,
+  unlink,
+} from 'node:fs/promises';
 import { dirname, join, parse, resolve } from 'node:path';
 import { ROOT_COMPILED_DIR_NAME } from '@core/modules/consts';
 import {
   type ManagedTargetEntry,
   readManagedTargetState,
+  writeManagedTargetState,
 } from '@core/sync/managed-target-state';
 import { MothError } from '@shared/errors';
 import { resolveMothPath } from '@shared/moth-dir';
 
-export type ApplyCompiledPlan = {
-  targets: ManagedTargetEntry[];
-  linksToCreate: ManagedTargetEntry[];
+export type ApplyCompiledResult = {
+  createdLinksCount: number;
+  removedObsoleteLinksCount: number;
+  alreadyCorrectLinksCount: number;
+  createdTargetPaths: string[];
   alreadyCorrectTargetPaths: string[];
-  obsoleteTargetPaths: string[];
+  removedObsoleteTargetPaths: string[];
 };
 
 type PathState =
@@ -24,7 +35,7 @@ type PathState =
   | { type: 'blocked-by-parent' }
   | { type: 'other' };
 
-export async function applyCompiled(): Promise<ApplyCompiledPlan> {
+export async function applyCompiled(): Promise<ApplyCompiledResult> {
   const compiledDirPath = resolve(resolveMothPath(ROOT_COMPILED_DIR_NAME));
 
   await assertCompiledDirUsable(compiledDirPath);
@@ -46,12 +57,210 @@ export async function applyCompiled(): Promise<ApplyCompiledPlan> {
     });
   }
 
-  return {
+  const removedObsoleteTargetPaths = await removeObsoleteTargets(
+    preflight.obsoleteTargets,
+  );
+  const createdTargetPaths: string[] = [];
+  const previouslyManagedTargetPaths = new Set(
+    state.targets.map((target) => target.targetPath),
+  );
+
+  try {
+    await createTargetLinks({
+      targets: preflight.linksToCreate,
+      createdTargetPaths,
+    });
+  } catch (e) {
+    await writePartialManagedTargetState({
+      targets,
+      appliedTargetPaths: new Set([
+        ...preflight.alreadyCorrectTargetPaths.filter((targetPath) =>
+          previouslyManagedTargetPaths.has(targetPath),
+        ),
+        ...createdTargetPaths,
+      ]),
+      originalError: e,
+    });
+
+    throw e;
+  }
+
+  await writeFinalManagedTargetState({
     targets,
-    linksToCreate: preflight.linksToCreate,
+    createdTargets: preflight.linksToCreate.filter((target) =>
+      createdTargetPaths.includes(target.targetPath),
+    ),
+  });
+
+  return {
+    createdLinksCount: createdTargetPaths.length,
+    removedObsoleteLinksCount: removedObsoleteTargetPaths.length,
+    alreadyCorrectLinksCount: preflight.alreadyCorrectTargetPaths.length,
+    createdTargetPaths,
     alreadyCorrectTargetPaths: preflight.alreadyCorrectTargetPaths,
-    obsoleteTargetPaths: preflight.obsoleteTargetPaths,
+    removedObsoleteTargetPaths,
   };
+}
+
+async function removeObsoleteTargets(
+  targets: ManagedTargetEntry[],
+): Promise<string[]> {
+  const removedTargetPaths: string[] = [];
+
+  for (const target of targets) {
+    try {
+      const pathState = await readPathState(target.targetPath);
+
+      if (pathState.type === 'missing') {
+        continue;
+      }
+
+      if (
+        pathState.type !== 'symlink' ||
+        pathState.targetPath !== target.sourcePath
+      ) {
+        throw new MothError({
+          message: formatObsoleteTargetConflict({
+            target,
+            pathState,
+          }),
+        });
+      }
+
+      try {
+        await unlink(target.targetPath);
+      } catch (e) {
+        if (isNotFoundError(e)) {
+          continue;
+        }
+
+        throw e;
+      }
+
+      removedTargetPaths.push(target.targetPath);
+    } catch (e) {
+      if (e instanceof MothError) {
+        throw e;
+      }
+
+      throw new MothError({
+        message: `Cannot remove obsolete managed symlink: ${target.targetPath}. Error: ${formatError(e)}`,
+      });
+    }
+  }
+
+  return removedTargetPaths;
+}
+
+async function createTargetLinks({
+  targets,
+  createdTargetPaths,
+}: {
+  targets: ManagedTargetEntry[];
+  createdTargetPaths: string[];
+}): Promise<void> {
+  for (const target of targets) {
+    try {
+      await mkdir(dirname(target.targetPath), { recursive: true });
+      await symlink(target.sourcePath, target.targetPath);
+      createdTargetPaths.push(target.targetPath);
+    } catch (e) {
+      throw new MothError({
+        message: `Cannot create target symlink: ${target.targetPath} -> ${target.sourcePath}. Error: ${formatError(e)}`,
+      });
+    }
+  }
+}
+
+async function writePartialManagedTargetState({
+  targets,
+  appliedTargetPaths,
+  originalError,
+}: {
+  targets: ManagedTargetEntry[];
+  appliedTargetPaths: Set<string>;
+  originalError: unknown;
+}): Promise<void> {
+  try {
+    await writeManagedTargetState({
+      state: {
+        targets: targets.filter((target) =>
+          appliedTargetPaths.has(target.targetPath),
+        ),
+      },
+    });
+  } catch (e) {
+    throw new MothError({
+      message: `${formatError(originalError)}
+Additionally, failed to write partial managed target state: ${formatError(e)}`,
+    });
+  }
+}
+
+async function writeFinalManagedTargetState({
+  targets,
+  createdTargets,
+}: {
+  targets: ManagedTargetEntry[];
+  createdTargets: ManagedTargetEntry[];
+}): Promise<void> {
+  try {
+    await writeManagedTargetState({
+      state: {
+        targets,
+      },
+    });
+  } catch (e) {
+    const rollbackErrors = await rollbackCreatedTargets(createdTargets);
+    const rollbackMessage =
+      rollbackErrors.length > 0
+        ? ` Created-link rollback also failed:\n${rollbackErrors.map((error) => `- ${error}`).join('\n')}`
+        : ' Created links from this run were rolled back.';
+
+    throw new MothError({
+      message: `Failed to write managed target state: ${formatError(e)}.${rollbackMessage} Obsolete links removed earlier were not restored.`,
+    });
+  }
+}
+
+async function rollbackCreatedTargets(
+  targets: ManagedTargetEntry[],
+): Promise<string[]> {
+  const errors: string[] = [];
+
+  for (const target of targets) {
+    try {
+      const pathState = await readPathState(target.targetPath);
+
+      if (pathState.type === 'missing') {
+        continue;
+      }
+
+      if (
+        pathState.type !== 'symlink' ||
+        pathState.targetPath !== target.sourcePath
+      ) {
+        errors.push(
+          `Created target changed before rollback: ${target.targetPath}`,
+        );
+        continue;
+      }
+
+      try {
+        await unlink(target.targetPath);
+      } catch (e) {
+        if (!isNotFoundError(e)) {
+          throw e;
+        }
+      }
+    } catch (e) {
+      errors.push(
+        `Cannot roll back created symlink ${target.targetPath}: ${formatError(e)}`,
+      );
+    }
+  }
+
+  return errors;
 }
 
 async function assertCompiledDirUsable(compiledDirPath: string): Promise<void> {
@@ -144,13 +353,13 @@ async function preflightApply({
 }): Promise<{
   linksToCreate: ManagedTargetEntry[];
   alreadyCorrectTargetPaths: string[];
-  obsoleteTargetPaths: string[];
+  obsoleteTargets: ManagedTargetEntry[];
   conflicts: string[];
 }> {
   const targetPaths = new Set(targets.map((target) => target.targetPath));
   const linksToCreate: ManagedTargetEntry[] = [];
   const alreadyCorrectTargetPaths: string[] = [];
-  const obsoleteTargetPaths: string[] = [];
+  const obsoleteTargets: ManagedTargetEntry[] = [];
   const conflicts: string[] = [];
 
   for (const previousTarget of previousTargets) {
@@ -168,7 +377,7 @@ async function preflightApply({
       pathState.type === 'symlink' &&
       pathState.targetPath === previousTarget.sourcePath
     ) {
-      obsoleteTargetPaths.push(previousTarget.targetPath);
+      obsoleteTargets.push(previousTarget);
       continue;
     }
 
@@ -180,7 +389,9 @@ async function preflightApply({
     );
   }
 
-  const obsoleteTargetPathSet = new Set(obsoleteTargetPaths);
+  const obsoleteTargetPathSet = new Set(
+    obsoleteTargets.map((target) => target.targetPath),
+  );
 
   for (const target of targets) {
     const parentConflict = await findParentPathConflict({
@@ -229,7 +440,7 @@ async function preflightApply({
   return {
     linksToCreate,
     alreadyCorrectTargetPaths,
-    obsoleteTargetPaths,
+    obsoleteTargets,
     conflicts,
   };
 }
