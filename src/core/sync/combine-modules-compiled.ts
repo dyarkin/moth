@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { chmod, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, parse, relative } from 'node:path';
 import { readMothConfig } from '@core/config';
 import type { ModuleTemplateRole } from '@core/modules/types';
@@ -24,6 +24,8 @@ type CompiledFileContribution = {
   targetFilePath: string;
   role: ModuleTemplateRole;
 };
+
+const FILE_WRITE_PERMISSION_BITS = 0o222;
 
 export async function combineModulesCompiled({
   shouldCompile,
@@ -54,6 +56,7 @@ export async function combineModulesCompiled({
     assertNoTargetPathDirectoryConflicts(contributions);
 
     await writeCompiledFileContributions(contributions);
+    await makeCompiledFilesReadOnly(resolveMothPath(ROOT_COMPILED_DIR_NAME));
   } catch (e) {
     await removeMothPath(ROOT_COMPILED_DIR_NAME);
     throw e;
@@ -210,6 +213,21 @@ async function writeCompiledFileContributions(
         contributions: targetContributions,
       }),
     );
+  }
+}
+
+async function makeCompiledFilesReadOnly(
+  compiledDirPath: string,
+): Promise<void> {
+  const relativeFilePaths = await listCompiledFileRelativePaths({
+    sourceDirPath: compiledDirPath,
+  });
+
+  for (const relativeFilePath of relativeFilePaths) {
+    const filePath = join(compiledDirPath, relativeFilePath);
+    const fileStats = await stat(filePath);
+
+    await chmod(filePath, fileStats.mode & ~FILE_WRITE_PERMISSION_BITS);
   }
 }
 
