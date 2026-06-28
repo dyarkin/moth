@@ -1,24 +1,29 @@
-import { parse, relative } from 'node:path';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { dirname, join, parse, relative } from 'node:path';
 import { readMothConfig } from '@core/config';
+import type { ModuleTemplateRole } from '@core/modules/types';
 import {
   MODULE_COMPILED_DIR_NAME,
   ROOT_COMPILED_DIR_NAME,
 } from '@core/modules/consts';
-import { compileModule, listModules } from '@core/modules';
 import {
-  COPY_DIR_FILES_ERROR_CODES,
-  CopyDirFilesError,
-  copyDirFilesRecursively,
-  ensureDirExists,
-  isDirectory,
-  isCopyDirFilesError,
-} from '@lib/util';
+  compileModule,
+  listModules,
+  readModuleTemplateRoles,
+} from '@core/modules';
+import { ensureDirExists, isDirectory } from '@lib/util';
 import {
   ModulesTargetFileConflictError,
   ModulesTargetPathNotDirectoryError,
   MothError,
 } from '@shared/errors';
 import { removeMothPath, resolveMothPath } from '@shared/moth-dir';
+
+type CompiledFileContribution = {
+  sourceFilePath: string;
+  targetFilePath: string;
+  role: ModuleTemplateRole;
+};
 
 export async function combineModulesCompiled({
   shouldCompile,
@@ -41,12 +46,14 @@ export async function combineModulesCompiled({
     await removeMothPath(ROOT_COMPILED_DIR_NAME);
     await ensureDirExists(resolveMothPath(ROOT_COMPILED_DIR_NAME));
 
-    for (const moduleName of modules) {
-      await copyModuleCompiledDir({
-        moduleName,
-        moduleRoot: config.moduleRoots[moduleName]!,
-      });
-    }
+    const contributions = await collectCompiledFileContributions({
+      modules,
+      moduleRoots: config.moduleRoots,
+    });
+
+    assertNoTargetPathDirectoryConflicts(contributions);
+
+    await writeCompiledFileContributions(contributions);
   } catch (e) {
     await removeMothPath(ROOT_COMPILED_DIR_NAME);
     throw e;
@@ -73,13 +80,34 @@ function assertAllModulesHaveRoots({
   }
 }
 
-async function copyModuleCompiledDir({
+async function collectCompiledFileContributions({
+  modules,
+  moduleRoots,
+}: {
+  modules: string[];
+  moduleRoots: Record<string, string>;
+}): Promise<CompiledFileContribution[]> {
+  const contributions: CompiledFileContribution[] = [];
+
+  for (const moduleName of modules) {
+    contributions.push(
+      ...(await collectModuleCompiledFileContributions({
+        moduleName,
+        moduleRoot: moduleRoots[moduleName]!,
+      })),
+    );
+  }
+
+  return contributions;
+}
+
+async function collectModuleCompiledFileContributions({
   moduleName,
   moduleRoot,
 }: {
   moduleName: string;
   moduleRoot: string;
-}): Promise<void> {
+}): Promise<CompiledFileContribution[]> {
   const sourceDirPath = resolveMothPath(moduleName, MODULE_COMPILED_DIR_NAME);
 
   if (!(await isDirectory(sourceDirPath))) {
@@ -88,28 +116,163 @@ async function copyModuleCompiledDir({
     });
   }
 
-  try {
-    await copyDirFilesRecursively({
-      sourceDirPath,
-      targetDirPath: resolveMothPath(
-        ROOT_COMPILED_DIR_NAME,
-        relative(parse(moduleRoot).root, moduleRoot),
-      ),
-    });
-  } catch (e) {
-    if (!isCopyDirFilesError(e)) {
-      throw e;
-    }
+  const templateRoles = await readModuleTemplateRoles({ moduleName });
+  const relativeTemplatePaths = await listCompiledFileRelativePaths({
+    sourceDirPath,
+  });
+  const compiledTemplatePaths = new Set(relativeTemplatePaths);
 
-    throw mapCopyDirFilesErrorToMothError(e);
+  for (const templatePath of Object.keys(templateRoles)) {
+    if (!compiledTemplatePaths.has(templatePath)) {
+      throw new MothError({
+        message: `Template role references missing compiled file: ${moduleName}/${templatePath}`,
+      });
+    }
+  }
+
+  const targetDirPath = resolveMothPath(
+    ROOT_COMPILED_DIR_NAME,
+    relative(parse(moduleRoot).root, moduleRoot),
+  );
+
+  return relativeTemplatePaths.map((relativeTemplatePath) => ({
+    sourceFilePath: join(sourceDirPath, relativeTemplatePath),
+    targetFilePath: join(targetDirPath, relativeTemplatePath),
+    role: templateRoles[relativeTemplatePath] ?? 'base',
+  }));
+}
+
+async function listCompiledFileRelativePaths({
+  sourceDirPath,
+  relativeDirPath = '',
+}: {
+  sourceDirPath: string;
+  relativeDirPath?: string;
+}): Promise<string[]> {
+  const dirPath = join(sourceDirPath, relativeDirPath);
+  const entries = await readdir(dirPath, { withFileTypes: true });
+  const dirs = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  const files = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(relativeDirPath, entry.name))
+    .sort();
+
+  for (const dirName of dirs) {
+    files.push(
+      ...(await listCompiledFileRelativePaths({
+        sourceDirPath,
+        relativeDirPath: join(relativeDirPath, dirName),
+      })),
+    );
+  }
+
+  return files;
+}
+
+function assertNoTargetPathDirectoryConflicts(
+  contributions: CompiledFileContribution[],
+): void {
+  const targetFilePaths = new Set(
+    contributions.map((contribution) => contribution.targetFilePath),
+  );
+
+  for (const targetFilePath of targetFilePaths) {
+    let parentPath = dirname(targetFilePath);
+
+    while (parentPath !== dirname(parentPath)) {
+      if (targetFilePaths.has(parentPath)) {
+        throw new ModulesTargetPathNotDirectoryError(parentPath);
+      }
+
+      parentPath = dirname(parentPath);
+    }
   }
 }
 
-function mapCopyDirFilesErrorToMothError(error: CopyDirFilesError): MothError {
-  switch (error.code) {
-    case COPY_DIR_FILES_ERROR_CODES.TARGET_FILE_ALREADY_EXISTS:
-      return new ModulesTargetFileConflictError(error.path);
-    case COPY_DIR_FILES_ERROR_CODES.TARGET_PATH_IS_NOT_DIRECTORY:
-      return new ModulesTargetPathNotDirectoryError(error.path);
+async function writeCompiledFileContributions(
+  contributions: CompiledFileContribution[],
+): Promise<void> {
+  const contributionsByTargetPath =
+    groupContributionsByTargetPath(contributions);
+
+  for (const [
+    targetFilePath,
+    targetContributions,
+  ] of contributionsByTargetPath) {
+    await ensureDirExists(dirname(targetFilePath));
+    await writeFile(
+      targetFilePath,
+      await readCombinedContributionContent({
+        targetFilePath,
+        contributions: targetContributions,
+      }),
+    );
   }
+}
+
+function groupContributionsByTargetPath(
+  contributions: CompiledFileContribution[],
+): Map<string, CompiledFileContribution[]> {
+  const contributionsByTargetPath = new Map<
+    string,
+    CompiledFileContribution[]
+  >();
+
+  for (const contribution of contributions) {
+    const targetContributions =
+      contributionsByTargetPath.get(contribution.targetFilePath) ?? [];
+
+    targetContributions.push(contribution);
+    contributionsByTargetPath.set(
+      contribution.targetFilePath,
+      targetContributions,
+    );
+  }
+
+  return contributionsByTargetPath;
+}
+
+async function readCombinedContributionContent({
+  targetFilePath,
+  contributions,
+}: {
+  targetFilePath: string;
+  contributions: CompiledFileContribution[];
+}): Promise<string | Buffer> {
+  const baseContributions = contributions.filter(
+    (contribution) => contribution.role === 'base',
+  );
+  const fragmentContributions = contributions.filter(
+    (contribution) => contribution.role === 'fragment',
+  );
+
+  if (baseContributions.length > 1) {
+    throw new ModulesTargetFileConflictError(targetFilePath);
+  }
+
+  if (baseContributions.length === 1 && fragmentContributions.length === 0) {
+    return readFile(baseContributions[0]!.sourceFilePath);
+  }
+
+  const orderedContributions = [...baseContributions, ...fragmentContributions];
+  const parts = await Promise.all(
+    orderedContributions.map((contribution) =>
+      readFile(contribution.sourceFilePath, 'utf8'),
+    ),
+  );
+
+  return joinPartsWithNewlineBoundaries(parts);
+}
+
+function joinPartsWithNewlineBoundaries(parts: string[]): string {
+  return parts.reduce((combinedContent, part, index) => {
+    if (index === 0 || combinedContent.endsWith('\n')) {
+      return `${combinedContent}${part}`;
+    }
+
+    return `${combinedContent}\n${part}`;
+  }, '');
 }
