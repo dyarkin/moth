@@ -7,3 +7,4 @@ export const MODULE_SNIPPETS_DIR_NAME = 'snippets';
 export const MODULE_COMPILED_DIR_NAME = '.compiled';
 export const MOTH_CONFIG_FILE_NAME = 'config.yaml';
 export const ROOT_COMPILED_DIR_NAME = '.compiled';
+export const ROOT_TARGETS_LOCAL_STATE_FILE_NAME = '.targets.local.yaml';
