@@ -6,75 +6,87 @@ import {
   readModuleVariables,
   scaffoldModule,
 } from '@core/modules';
+import { MothError } from '@shared/errors';
 import { MOTH_DIR_PATH } from '@shared/moth-dir';
 import { switchModulePresetInLocalState } from './switch-module-preset-in-local-state';
 
 export function registerModulesCommand(program: Command): void {
   program
-    .command('modules')
-    .description(`List modules found in ${MOTH_DIR_PATH}`)
-    .action(async () => {
-      const modules = await listModules();
+    .command('module <parts...>')
+    .description('Manage modules')
+    .usage(
+      'list | init <moduleName> | <moduleName> vars | <moduleName> preset enable <presetName> | <moduleName> preset disable <presetName> | <moduleName> templates tree',
+    )
+    .addHelpText(
+      'after',
+      `
+Commands:
+  module list
+  module init <moduleName>
+  module <moduleName> vars
+  module <moduleName> preset enable <presetName>
+  module <moduleName> preset disable <presetName>
+  module <moduleName> templates tree`,
+    )
+    .action(async (parts: string[]) => {
+      const [moduleName, action, subaction, value] = parts;
 
-      if (modules.length === 0) {
-        console.log(`No modules found in ${MOTH_DIR_PATH}`);
+      if (parts.length === 1 && moduleName === 'list') {
+        const modules = await listModules();
+
+        if (modules.length === 0) {
+          console.log(`No modules found in ${MOTH_DIR_PATH}`);
+          return;
+        }
+
+        modules.forEach((name) => console.log(name));
         return;
       }
 
-      modules.forEach((moduleName) => console.log(moduleName));
-    });
+      if (parts.length === 2 && moduleName === 'init' && action) {
+        const modulePath = await scaffoldModule(action);
+        console.log(`Module created: ${action}`);
+        console.log(`Path: ${modulePath}`);
+        return;
+      }
 
-  program
-    .command('module-init <moduleName>')
-    .description(`Create a new module with default files and dirs`)
-    .action(async (moduleName: string) => {
-      const modulePath = await scaffoldModule(moduleName);
-      console.log(`Module created: ${moduleName}`);
-      console.log(`Path: ${modulePath}`);
-    });
+      if (parts.length === 2 && moduleName && action === 'vars') {
+        const variables = await readModuleVariables(moduleName);
+        console.log(variables);
+        console.log(YAML.stringify(variables).trimEnd());
+        return;
+      }
 
-  program
-    .command('module-vars <moduleName>')
-    .description(
-      'Read and print merged module variables including enabled presets',
-    )
-    .action(async (moduleName: string) => {
-      const variables = await readModuleVariables(moduleName);
-      console.log(variables);
-      console.log(YAML.stringify(variables).trimEnd());
-    });
+      if (
+        parts.length === 4 &&
+        moduleName &&
+        action === 'preset' &&
+        (subaction === 'enable' || subaction === 'disable') &&
+        value
+      ) {
+        await switchModulePresetInLocalState({
+          moduleName,
+          presetFullNameInput: value,
+          operation: subaction,
+        });
 
-  program
-    .command('module-preset-enable <moduleName> <presetName>')
-    .description('Enable a preset for a module')
-    .action(async (moduleName: string, presetName: string) => {
-      await switchModulePresetInLocalState({
-        moduleName,
-        presetFullNameInput: presetName,
-        operation: 'enable',
+        console.log(`Preset ${subaction}d: ${moduleName}/${value}`);
+        return;
+      }
+
+      if (
+        parts.length === 3 &&
+        moduleName &&
+        action === 'templates' &&
+        subaction === 'tree'
+      ) {
+        const templatesTree = await readModuleTemplatesTree(moduleName);
+        console.log(YAML.stringify(templatesTree).trimEnd());
+        return;
+      }
+
+      throw new MothError({
+        message: `Unknown module command: module ${parts.join(' ')}`,
       });
-
-      console.log(`Preset enabled: ${moduleName}/${presetName}`);
-    });
-
-  program
-    .command('module-preset-disable <moduleName> <presetName>')
-    .description('Disable a preset for a module')
-    .action(async (moduleName: string, presetName: string) => {
-      await switchModulePresetInLocalState({
-        moduleName,
-        presetFullNameInput: presetName,
-        operation: 'disable',
-      });
-
-      console.log(`Preset disabled: ${moduleName}/${presetName}`);
-    });
-
-  program
-    .command('module-templates-tree <moduleName>')
-    .description('Read and print templates/ tree for a module')
-    .action(async (moduleName: string) => {
-      const templatesTree = await readModuleTemplatesTree(moduleName);
-      console.log(YAML.stringify(templatesTree).trimEnd());
     });
 }
