@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { printApplyCompiledResult } from '@core/commands/apply';
 import { applyCompiled, combineModulesCompiled } from '@core/sync';
+import { formatPath, printSuccess } from './output';
 
 type SyncCommandOptions = {
   prepareOnly?: boolean;
@@ -20,7 +21,7 @@ export function registerSyncCommand(program: Command): void {
       });
 
       if (options.prepareOnly) {
-        console.log(`Sync prepared: ${compiledDirPath}`);
+        printSuccess(`Sync prepared: ${formatPath(compiledDirPath)}`);
         return;
       }
 

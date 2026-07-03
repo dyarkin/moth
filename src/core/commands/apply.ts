@@ -1,5 +1,12 @@
 import type { Command } from 'commander';
 import { applyCompiled, type ApplyCompiledResult } from '@core/sync';
+import {
+  formatPath,
+  printEmpty,
+  printKeyValue,
+  printList,
+  printSection,
+} from './output';
 
 export function registerApplyCommand(program: Command): void {
   program
@@ -11,30 +18,46 @@ export function registerApplyCommand(program: Command): void {
 }
 
 export function printApplyCompiledResult(result: ApplyCompiledResult): void {
-  console.log(`Created links: ${result.createdLinksCount}`);
-  console.log(`Removed obsolete links: ${result.removedObsoleteLinksCount}`);
-  console.log(`Already-correct links: ${result.alreadyCorrectLinksCount}`);
+  printSection('Apply summary');
+  printKeyValue({ label: 'Created links', value: result.createdLinksCount });
+  printKeyValue({
+    label: 'Removed obsolete links',
+    value: result.removedObsoleteLinksCount,
+  });
+  printKeyValue({
+    label: 'Already-correct links',
+    value: result.alreadyCorrectLinksCount,
+  });
 
-  printTargetPathGroup('Created links', result.createdTargetPaths);
-  printTargetPathGroup(
-    'Already-correct links',
-    result.alreadyCorrectTargetPaths,
-  );
-  printTargetPathGroup(
-    'Removed obsolete links',
-    result.removedObsoleteTargetPaths,
-  );
+  console.log();
+
+  printTargetPathGroup({
+    title: 'Created links',
+    targetPaths: result.createdTargetPaths,
+  });
+  printTargetPathGroup({
+    title: 'Already-correct links',
+    targetPaths: result.alreadyCorrectTargetPaths,
+  });
+  printTargetPathGroup({
+    title: 'Removed obsolete links',
+    targetPaths: result.removedObsoleteTargetPaths,
+  });
 }
 
-function printTargetPathGroup(title: string, targetPaths: string[]): void {
-  console.log(`${title}:`);
+function printTargetPathGroup({
+  title,
+  targetPaths,
+}: {
+  title: string;
+  targetPaths: string[];
+}): void {
+  printSection(title);
 
   if (targetPaths.length === 0) {
-    console.log('- none');
+    printEmpty();
     return;
   }
 
-  for (const targetPath of targetPaths) {
-    console.log(`- ${targetPath}`);
-  }
+  printList(targetPaths.map(formatPath));
 }

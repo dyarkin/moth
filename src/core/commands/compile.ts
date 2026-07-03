@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { compileModule, listModules } from '@core/modules';
 import { MothError } from '@shared/errors';
+import { formatName, formatPath, printKeyValue, printSuccess } from './output';
 
 type CompileCommandOptions = {
   all?: boolean;
@@ -32,8 +33,11 @@ export function registerCompileCommand(program: Command): void {
           );
 
           for (const compiledModule of compiledModules) {
-            console.log(`Module compiled: ${compiledModule.name}`);
-            console.log(`Path: ${compiledModule.compiledDirPath}`);
+            printSuccess(`Module compiled: ${formatName(compiledModule.name)}`);
+            printKeyValue({
+              label: 'Path',
+              value: formatPath(compiledModule.compiledDirPath),
+            });
           }
           return;
         }
@@ -46,8 +50,8 @@ export function registerCompileCommand(program: Command): void {
 
         const compiledDirPath = await compileModule(moduleName);
 
-        console.log(`Module compiled: ${moduleName}`);
-        console.log(`Path: ${compiledDirPath}`);
+        printSuccess(`Module compiled: ${formatName(moduleName)}`);
+        printKeyValue({ label: 'Path', value: formatPath(compiledDirPath) });
       },
     );
 }

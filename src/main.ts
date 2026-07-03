@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { registerCommands } from '@core/commands';
+import { printError } from '@core/commands/output';
 import { isMothError } from '@shared/errors';
 
 const program = new Command();
@@ -14,7 +15,7 @@ try {
   await program.parseAsync();
 } catch (e) {
   if (isMothError(e)) {
-    console.error(e.message);
+    printError(e.message);
     process.exit(1);
   }
 

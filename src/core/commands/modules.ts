@@ -8,6 +8,15 @@ import {
 } from '@core/modules';
 import { MothError } from '@shared/errors';
 import { MOTH_DIR_PATH } from '@shared/moth-dir';
+import {
+  formatName,
+  formatPath,
+  printInfo,
+  printKeyValue,
+  printList,
+  printSection,
+  printSuccess,
+} from './output';
 import { switchModulePresetInLocalState } from './switch-module-preset-in-local-state';
 
 export function registerModulesCommand(program: Command): void {
@@ -35,24 +44,24 @@ Commands:
         const modules = await listModules();
 
         if (modules.length === 0) {
-          console.log(`No modules found in ${MOTH_DIR_PATH}`);
+          printInfo(`No modules found in ${formatPath(MOTH_DIR_PATH)}`);
           return;
         }
 
-        modules.forEach((name) => console.log(name));
+        printSection('Modules');
+        printList(modules.map(formatName));
         return;
       }
 
       if (parts.length === 2 && moduleName === 'init' && action) {
         const modulePath = await scaffoldModule(action);
-        console.log(`Module created: ${action}`);
-        console.log(`Path: ${modulePath}`);
+        printSuccess(`Module created: ${formatName(action)}`);
+        printKeyValue({ label: 'Path', value: formatPath(modulePath) });
         return;
       }
 
       if (parts.length === 2 && moduleName && action === 'vars') {
         const variables = await readModuleVariables(moduleName);
-        console.log(variables);
         console.log(YAML.stringify(variables).trimEnd());
         return;
       }
@@ -70,7 +79,9 @@ Commands:
           operation: subaction,
         });
 
-        console.log(`Preset ${subaction}d: ${moduleName}/${value}`);
+        printSuccess(
+          `Preset ${subaction}d: ${formatName(`${moduleName}/${value}`)}`,
+        );
         return;
       }
 
