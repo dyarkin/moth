@@ -1,0 +1,57 @@
+.docs-shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 40px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.docs-sidebar {
+  align-self: start;
+  position: sticky;
+  top: 24px;
+  border-right: 1px solid #e8e8e8;
+  padding-right: 24px;
+}
+
+.docs-sidebar-title {
+  display: block;
+  margin-bottom: 16px;
+  color: #111;
+  font-weight: 700;
+}
+
+.docs-sidebar nav {
+  display: grid;
+  gap: 8px;
+}
+
+.docs-sidebar a {
+  color: #424242;
+  text-decoration: none;
+}
+
+.docs-sidebar a:hover {
+  color: #111;
+  text-decoration: underline;
+}
+
+.docs-content {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .docs-shell {
+    display: block;
+    padding: 24px 16px;
+  }
+
+  .docs-sidebar {
+    position: static;
+    border-right: 0;
+    border-bottom: 1px solid #e8e8e8;
+    margin-bottom: 28px;
+    padding: 0 0 20px;
+  }
+}

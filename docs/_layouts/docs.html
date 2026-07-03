@@ -1,0 +1,25 @@
+---
+layout: default
+---
+
+<link rel="stylesheet" href="{{ '/assets/css/docs.css' | relative_url }}">
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <a class="docs-sidebar-title" href="{{ '/' | relative_url }}">Moth Docs</a>
+    <nav>
+      <a href="{{ '/' | relative_url }}">Overview</a>
+      <a href="{{ '/getting-started.html' | relative_url }}">Getting Started</a>
+      <a href="{{ '/configuration.html' | relative_url }}">Configuration</a>
+      <a href="{{ '/modules.html' | relative_url }}">Modules</a>
+      <a href="{{ '/templates.html' | relative_url }}">Templates</a>
+      <a href="{{ '/presets.html' | relative_url }}">Presets</a>
+      <a href="{{ '/sync-and-conflicts.html' | relative_url }}">Sync and Conflicts</a>
+      <a href="{{ '/commands.html' | relative_url }}">Command Reference</a>
+    </nav>
+  </aside>
+
+  <main class="docs-content" id="main-content">
+    {{ content }}
+  </main>
+</div>
