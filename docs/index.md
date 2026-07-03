@@ -4,7 +4,7 @@ title: Moth Usage Docs
 
 # Moth
 
-Moth manages config files from one central directory.
+Moth manages configuration files from one central directory.
 
 Instead of editing files directly in many places like `~/.gitconfig` or `~/.config/nvim/init.lua`, you describe those files in Moth modules. Moth renders templates, prepares the final files, and symlinks them into their real target locations.
 
