@@ -1,10 +1,19 @@
+.site-header {
+  display: none;
+}
+
+.page-content > .wrapper {
+  max-width: none;
+  padding: 0;
+}
+
 .docs-shell {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 40px;
-  max-width: 1120px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 48px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 48px 40px;
 }
 
 .docs-sidebar {
