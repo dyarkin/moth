@@ -3,7 +3,7 @@ name: docs-guide
 description: Use this guide to navigate project docs with ease
 ---
 
-Project's manually written docs are stored at `docs/`.
+Project's manually written design and development docs are stored at `dev-docs/`.
 
 - `commands.md` -- describes all the commands of the CLI tool, their purpose and arguments.
 - `condlict-resolution.md` -- describes rules of resolving conflicts that occur in CLI flows. For example, how this tools handled situation when 2 modules define their own version of certain file, or when some compiled file can't be synlinked to its target location because similar file already exists there.
@@ -15,5 +15,5 @@ Project's manually written docs are stored at `docs/`.
 - `used-technologies.md` -- lists all the technologies used by our CLI tool and their purpose.
 - `variables.md` -- describes "variables" functionality, which allows to defined module-scoped variables and use them inside templates.
 
-**Important!**: Pay attention that not all the feature described in docs may be already implemented. `docs/` describes how the project *should* look and work like, not its current state.
+**Important!**: Pay attention that not all the feature described in docs may be already implemented. `dev-docs/` describes how the project *should* look and work like, not its current state.
 Also, some of the docs may be yet unfinished.
