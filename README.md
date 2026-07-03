@@ -4,7 +4,9 @@ CLI tool for managing and composing config files.
 
 ## Commands
 
-For command usage and behavior, see `docs/commands.md`.
+For user-facing usage docs, see `docs/`.
+
+Design and development docs live in `dev-docs/`.
 
 ## Moth Dir Resolution
 

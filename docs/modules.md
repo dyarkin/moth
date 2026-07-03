@@ -1,28 +1,82 @@
-[NOT FINISHED]
+---
+title: Modules
+---
 
 # Modules
 
-Modules are isolated and independent sets of configs and variables, that can be imported as standalone repos by the user. Our `moth` tool is supposed manage those modules and convert them to real files in the filesystem.
+A module is one independent group of config files.
 
-Modules contain their own sets of templates, variables, presets and groups, and cannot communicate with other modules in any way.
+Use modules to split configs by responsibility. For example:
 
-Each module has the following structure:
+- `git` for Git config.
+- `shell` for shell config.
+- `nvim` for Neovim config.
 
-[TODO: probably make manifest TOML to differentiate from variables files?]
-- `manifest.yaml` -- description of the module, like types of templates (housing/tenant), whether certain files should be disabled with certain variables values, default enabled presets, etc.
-- `templates/` -- directory with templates (for more details refer to `docs/templates.md`)
-- `variables/` -- directory with variables `.yaml` files (for more details refer to `docs/variables.yaml`). This directory must **always** contain `main.yaml` file.
-- `presets/` -- directory with presets `.yaml` files, which store variables and are meant to override variables imported from `variables/`. Each preset can be independently enabled/disabled, and the state of presets is stored at [WHERE?]. Preset names are defined my their file names.
-- `presets/<GROUP_NAME>/` -- presets can be combined in groups under `presets` dir. In each group several presets can't be enabled simultaneosly, if one preset is enabled we disable the rest of presets in the same group automatically. It allows to build versatile configs for different environments, OS-s and other conditions where two presets can't be enabled at the same time. For more detailes refer to `docs/presets-and-groups.md`.
-- `snippets/` -- snippets are reused text parts of the templates, that can be imported in them. Unlike templates, snippets are not compiled into standalone final files. Snippets also can take some input arguments that can be used as regular variables. For more details refer to `docs/snippets.md`
-- `.state.local.yaml` — all temporary values, like currently enabled presets. **Note!**: This file is designed to store temporal local variables about the state of the module, however it's up to the user if this file should be commited. Default settings should be saved at `manifest.yaml`.
+Each non-hidden directory directly inside the Moth root is treated as a module.
 
-Technical files:
+## Create a Module
 
-- `.compiled` -- final compiled templates of the module, before they are copied to the tool's root dir `.compiled` (refer to `docs/templates.md` for more details).
+```sh
+moth module init shell
+```
 
-## `manifest.yaml`
-[TODO]
+Created layout:
 
-## Structure Validation
-[TODO]
+```text
+~/.moth/shell/
+  manifest.yaml
+  templates/
+  variables/
+  presets/
+  snippets/
+```
+
+## Module Directories
+
+`templates/` contains source files that become real config files.
+
+`variables/` contains YAML files used while rendering templates.
+
+`presets/` contains optional YAML files that can override variables when enabled.
+
+`snippets/` contains reusable template fragments.
+
+`manifest.yaml` contains module metadata. Currently it is used to configure template roles.
+
+## Generated Files
+
+Moth may create these files inside a module:
+
+```text
+~/.moth/shell/
+  .compiled/
+  .state.local.yaml
+```
+
+`.compiled/` contains rendered output for that module.
+
+`.state.local.yaml` stores local module state, such as enabled presets.
+
+## List Modules
+
+```sh
+moth module list
+```
+
+This lists non-hidden directories in the Moth root.
+
+## Inspect Module Variables
+
+```sh
+moth module shell vars
+```
+
+This prints the variables Moth would use for the module after merging base variables and enabled presets.
+
+## Inspect Module Templates
+
+```sh
+moth module shell templates tree
+```
+
+This prints the templates Moth sees in the module.

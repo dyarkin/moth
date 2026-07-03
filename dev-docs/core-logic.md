@@ -2,7 +2,7 @@
 
 Main tool's directory is `~/.moth/` dir, where it stores all the modules and configs.
 
-Each directory in `~/.moth/` is considered a separate module (refer to `docs/modules.md` for more information on the modules purpose). `~/.moth/config.yaml` contains an information about the target locations where each module has to be "stowed" to (in terms of GNU Stow). It is also supposed to contain the rules of conflict resolution between modules and other configs, which are not yet defined.
+Each directory in `~/.moth/` is considered a separate module (refer to `dev-docs/modules.md` for more information on the modules purpose). `~/.moth/config.yaml` contains an information about the target locations where each module has to be "stowed" to (in terms of GNU Stow). It is also supposed to contain the rules of conflict resolution between modules and other configs, which are not yet defined.
 
 Also `~/.moth/` contains a `.compiled/` dir, that is created after compiling any module (and persists after that, though the content changes). It combines compiled files from all the modules that are currently enabled for syncing with already calculated paths (using info from `config.yaml`). In other words, `~/.moth/.compiled/` is a main target of all compiled modules before they are stowed, and `.compiled` replicates the structure of file system to preserve templates locations.
 

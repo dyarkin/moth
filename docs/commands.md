@@ -1,164 +1,61 @@
-# CLI Commands
+---
+title: Command Reference
+---
 
-## Module Commands
+# Command Reference
 
-### `moth module list`
+## `moth module list`
 
-Lists module directories in moth dir.
+Lists modules in the Moth root.
 
-Behavior:
-- Prints one module name per line.
-- Ignores hidden directories.
-- If moth dir does not exist or has no modules, prints `No modules found in <MOTH_DIR_PATH>`.
+## `moth module init <moduleName>`
 
-Example:
+Creates a module skeleton with `manifest.yaml`, `templates/`, `variables/`, `presets/`, and `snippets/`.
 
-```sh
-bun src/main.ts module list
-```
+## `moth module <moduleName> vars`
 
-### `moth module init <moduleName>`
+Prints the merged variables for a module as YAML.
 
-Creates a new module scaffold in moth dir.
+This includes base variables and currently enabled presets.
 
-Creates:
-- `<moduleName>/manifest.yaml`
-- `<moduleName>/templates/`
-- `<moduleName>/variables/`
+## `moth module <moduleName> templates tree`
 
-Behavior:
-- Ensures moth dir exists.
-- Throws an error if a module with the same name already exists.
+Prints the module template tree as YAML.
 
-Example:
-
-```sh
-bun src/main.ts module init zsh
-```
-
-### `moth module <moduleName> vars`
-
-Reads and prints merged module variables including enabled presets.
-
-Example:
-
-```sh
-bun src/main.ts module zsh vars
-```
-
-### `moth module <moduleName> preset enable <presetName>`
+## `moth module <moduleName> preset enable <presetName>`
 
 Enables a preset for a module.
 
-Example:
+Preset name formats:
 
-```sh
-bun src/main.ts module zsh preset enable work
-```
+- `<preset>` for ungrouped presets.
+- `<group>/<preset>` for grouped presets.
 
-### `moth module <moduleName> preset disable <presetName>`
+## `moth module <moduleName> preset disable <presetName>`
 
 Disables a preset for a module.
 
-Example:
+## `moth compile <moduleName>`
 
-```sh
-bun src/main.ts module zsh preset disable work
+Compiles one module into:
+
+```text
+~/.moth/<moduleName>/.compiled
 ```
 
-### `moth module <moduleName> templates tree`
+## `moth compile --all`
 
-Prints the module `templates/` tree as YAML.
+Compiles all modules.
 
-Example:
+## `moth sync`
 
-```sh
-bun src/main.ts module zsh templates tree
-```
+Runs the full workflow: compile modules, prepare root `.compiled`, and apply symlinks.
 
-## Compilation Commands
+Options:
 
-### `moth compile <moduleName>`
+- `--prepare-only`: prepare `~/.moth/.compiled` without applying symlinks.
+- `--no-compile`: use existing module `.compiled` directories.
 
-Compiles one module into its `.compiled` directory.
+## `moth apply`
 
-Example:
-
-```sh
-bun src/main.ts compile zsh
-```
-
-### `moth compile --all`
-
-Compiles all modules into their `.compiled` directories.
-
-Behavior:
-- Cannot be combined with `<moduleName>`.
-
-Example:
-
-```sh
-bun src/main.ts compile --all
-```
-
-## Apply And Sync Commands
-
-### `moth apply`
-
-Applies prepared root `.compiled` files to target paths.
-
-Example:
-
-```sh
-bun src/main.ts apply
-```
-
-### `moth sync`
-
-Compiles modules, prepares root `.compiled`, then applies it.
-
-Example:
-
-```sh
-bun src/main.ts sync
-```
-
-### `moth sync --prepare-only`
-
-Compiles modules and prepares root `.compiled`, but does not apply it.
-
-Example:
-
-```sh
-bun src/main.ts sync --prepare-only
-```
-
-### `moth sync --no-compile`
-
-Prepares and applies root `.compiled` without recompiling modules first.
-
-Example:
-
-```sh
-bun src/main.ts sync --no-compile
-```
-
-### `moth sync --prepare-only --no-compile`
-
-Prepares root `.compiled` without recompiling modules first, but does not apply it.
-
-Example:
-
-```sh
-bun src/main.ts sync --prepare-only --no-compile
-```
-
-## Help Commands
-
-### `moth --help`
-
-Prints root help.
-
-### `moth <command> --help`
-
-Prints command-specific help.
+Applies symlinks from the already prepared root `.compiled` directory.

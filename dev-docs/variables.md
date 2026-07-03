@@ -22,7 +22,7 @@ Variables also can be used in the module's `manifest.yaml` to enable/disable cer
 
 Variables are stored in the YAML files in `~/.moth/<MODULE_NAME>/variables/`. All the files from it should be considered to be read simulaneously, therefore if several YAML files define the value for the same variable, the final value in this case can't be reliably predicted.
 
-Variable values can be overriden by currently enabled module presets (refer to `docs/presets-and-groups.md` for more information). Those values have higher precedence than original values from `variables/`.
+Variable values can be overriden by currently enabled module presets (refer to `dev-docs/presets-and-groups.md` for more information). Those values have higher precedence than original values from `variables/`.
 
 ## Important: resolution order
 When importing variable files inside `variables/` and using presets, order in which values of variables with the same name are resolved is not guaranteed. However, it's guaranteed that preset values have higher precedence.

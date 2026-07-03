@@ -9,7 +9,7 @@ Presets allow to override default module variables and define new ones. Presets 
 Presets are stored under `~/.moth/<MODULE_NAME>/presets/` as YAML files, with file name considered preset's name.
 For example, `~/.moth/<MODULE_NAME>/presets/macos-env.yaml` defines a preset with name `macos-env`.
 
-Preset files are structured in the exact same way as variable files, refer to `docs/variables.md` for more information.
+Preset files are structured in the exact same way as variable files, refer to `dev-docs/variables.md` for more information.
 
 Presets can be grouped, with only one preset in the group being active. If another preset in group is enabled, the previously enabled one disabled automatically.
 

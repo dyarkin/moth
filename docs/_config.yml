@@ -1,0 +1,4 @@
+title: Moth
+description: CLI tool for managing and composing config files.
+theme: minima
+markdown: kramdown
