@@ -43,12 +43,14 @@ With this root, a template named `.gitconfig` becomes the target path `~/.gitcon
 Create `~/.moth/git/templates/.gitconfig`:
 
 ```ini
+{% raw %}
 [user]
   name = {{ user.name }}
   email = {{ user.email }}
+{% endraw %}
 ```
 
-This is almost the final config file, except `{{ user.name }}` and `{{ user.email }}` are placeholders.
+This is almost the final config file, except `{% raw %}{{ user.name }}{% endraw %}` and `{% raw %}{{ user.email }}{% endraw %}` are placeholders.
 
 ## 4. Create variables
 

@@ -48,12 +48,14 @@ Moth renders templates with Nunjucks.
 Example template:
 
 ```ini
+{% raw %}
 [user]
   name = {{ user.name }}
   email = {{ user.email }}
+{% endraw %}
 ```
 
-The `{{ ... }}` parts read values from module variables.
+The `{% raw %}{{ ... }}{% endraw %}` parts read values from module variables.
 
 ## Variables
 
@@ -74,7 +76,9 @@ user:
 Variables are available directly in templates:
 
 ```text
+{% raw %}
 {{ user.name }}
+{% endraw %}
 ```
 
 Moth reads all `.yaml` files in the module variables directory and merges them. Enabled presets are merged after base variables, so preset values override base values.
@@ -100,13 +104,17 @@ Example file:
 Usage in a template:
 
 ```text
+{% raw %}
 {{ snippet("header") }}
+{% endraw %}
 ```
 
 You can pass extra values to a snippet:
 
 ```text
+{% raw %}
 {{ snippet("section", { title: "Editor" }) }}
+{% endraw %}
 ```
 
 Snippet arguments override variables with the same name while rendering that snippet.
