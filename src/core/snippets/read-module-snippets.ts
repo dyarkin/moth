@@ -17,26 +17,70 @@ export async function readModuleSnippets(
     return {};
   }
 
-  const { files } = await listMothDir(snippetsRelativePath);
   const snippets: SnippetSet = {};
+  const snippetSources: Record<string, string> = {};
 
-  for (const fileName of files) {
-    const snippetName = getSnippetName(fileName);
-
-    if (Object.hasOwn(snippets, snippetName)) {
-      throw new MothError({
-        message: `Duplicate snippet name in module ${moduleName}: ${snippetName}`,
-      });
-    }
-
-    snippets[snippetName] = await readMothTextFile(
-      join(snippetsRelativePath, fileName),
-    );
-  }
+  await readSnippetsDirectory({
+    moduleName,
+    relativePath: snippetsRelativePath,
+    publicNameSegments: [],
+    snippets,
+    snippetSources,
+  });
 
   return snippets;
 }
 
-function getSnippetName(fileName: string): string {
-  return basename(fileName, extname(fileName));
+async function readSnippetsDirectory({
+  moduleName,
+  relativePath,
+  publicNameSegments,
+  snippets,
+  snippetSources,
+}: {
+  moduleName: string;
+  relativePath: string;
+  publicNameSegments: string[];
+  snippets: SnippetSet;
+  snippetSources: Record<string, string>;
+}): Promise<void> {
+  const { files, dirs } = await listMothDir(relativePath);
+
+  for (const fileName of files) {
+    const snippetName = getSnippetName({ fileName, publicNameSegments });
+    const snippetRelativePath = join(relativePath, fileName);
+
+    if (Object.hasOwn(snippetSources, snippetName)) {
+      const existingSnippetSource = snippetSources[snippetName];
+
+      throw new MothError({
+        message: `Duplicate snippet name in module ${moduleName}: ${snippetName}. Conflicting files: ${existingSnippetSource}, ${snippetRelativePath}`,
+      });
+    }
+
+    snippetSources[snippetName] = snippetRelativePath;
+    snippets[snippetName] = await readMothTextFile(snippetRelativePath);
+  }
+
+  for (const dirName of dirs) {
+    await readSnippetsDirectory({
+      moduleName,
+      relativePath: join(relativePath, dirName),
+      publicNameSegments: [...publicNameSegments, dirName],
+      snippets,
+      snippetSources,
+    });
+  }
+}
+
+function getSnippetName({
+  fileName,
+  publicNameSegments,
+}: {
+  fileName: string;
+  publicNameSegments: string[];
+}): string {
+  return [...publicNameSegments, basename(fileName, extname(fileName))].join(
+    '/',
+  );
 }

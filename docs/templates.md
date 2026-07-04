@@ -93,7 +93,7 @@ Snippets live in:
 ~/.moth/<module>/snippets
 ```
 
-The snippet name is the file name without extension.
+The snippet name is the path relative to `snippets/`, with the file extension removed from the final segment. Nested snippet names use `/` as the separator. Directories are only used for organization and are not snippets themselves.
 
 Example file:
 
@@ -106,6 +106,20 @@ Usage in a template:
 ```text
 {% raw %}
 {{ snippet("header") }}
+{% endraw %}
+```
+
+Nested example file:
+
+```text
+~/.moth/shell/snippets/git/header.md
+```
+
+Usage in a template:
+
+```text
+{% raw %}
+{{ snippet("git/header") }}
 {% endraw %}
 ```
 
