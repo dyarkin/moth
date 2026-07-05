@@ -30,7 +30,11 @@ Enabled presets are stored in:
 ~/.moth/<module>/.state.local.yaml
 ```
 
+Changing enabled presets changes local state only. Run `moth sync` to recompile and apply files with the new values.
+
 ## Ungrouped Presets
+
+Ungrouped presets are independent. Multiple ungrouped presets can be enabled at the same time.
 
 Create a preset file:
 
@@ -42,8 +46,11 @@ Example content:
 
 ```yaml
 user:
+  name: Example User
   email: user@company.com
 ```
+
+Because merging is shallow, repeat sibling values you still need when a preset overrides an object.
 
 Enable it:
 
@@ -55,6 +62,12 @@ Disable it:
 
 ```sh
 moth module git preset disable work
+```
+
+Inspect the result:
+
+```sh
+moth module git vars
 ```
 
 ## Grouped Presets
@@ -76,7 +89,62 @@ moth module shell preset enable os/macos
 
 If `os/linux` was enabled before, Moth replaces it with `os/macos`.
 
-Only one preset from the same group can be enabled at a time.
+Only one preset from the same group can be enabled at a time. Presets from different groups can be enabled together.
+
+Supported preset name formats:
+
+- `work`
+- `os/macos`
+
+Nested groups such as `os/macos/arm` are not supported.
+
+## Example: OS and Environment
+
+Base variables:
+
+```yaml
+paths:
+  shellPrefix: /usr/local/bin
+profile:
+  editor: vim
+```
+
+`presets/os/macos.yaml`:
+
+```yaml
+paths:
+  shellPrefix: /opt/homebrew/bin
+```
+
+`presets/env/work.yaml`:
+
+```yaml
+profile:
+  editor: nvim
+```
+
+Enable both dimensions:
+
+```sh
+moth module shell preset enable os/macos
+moth module shell preset enable env/work
+```
+
+The enabled presets are recorded locally, and templates use the merged variables on the next compile or sync.
+
+## Merge Rules
+
+Preset files have the same YAML shape as variable files.
+
+Merging is shallow. If two enabled presets define the same top-level key, the final value is not something you should rely on. Avoid enabling presets that compete for the same top-level variable unless they are in the same group and therefore mutually exclusive.
+
+If a preset overrides an object, it replaces that top-level object. Repeat the whole object in the preset or keep independently overridden values under separate top-level keys.
+
+Prefer clear ownership, for example:
+
+- `os/*` owns `os` or `paths` variables.
+- `env/*` owns `account` or `profile` variables.
+- `theme/*` owns `theme` variables.
 
 ## Presets and Compilation
 
