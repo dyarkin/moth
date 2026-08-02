@@ -32,3 +32,14 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Local testing
+.moth/
+.moth-test-root/
+
+# Local AI
+ai-logs/
+ai-tasks/
+
+# Local experiments
+prototypes/
