@@ -1,0 +1,95 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.9'
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+
+  release:
+    needs: checks
+    runs-on: ubuntu-latest
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.9'
+      - run: bun install --frozen-lockfile
+
+      - name: Resolve version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build binaries
+        env:
+          MOTH_RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: bun run build:release
+
+      - name: Smoke test linux binary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: test "$(./dist/release/linux-x64/moth --version)" = "$VERSION"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > notes.md <<'EOF'
+          ## Install
+
+          ```sh
+          curl -fsSL https://raw.githubusercontent.com/dyarkin/moth/main/install.sh | sh
+          ```
+
+          ```sh
+          brew install dyarkin/tap/moth
+          ```
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            dist/release/*.tar.gz dist/release/checksums.txt \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            --generate-notes
+
+      - name: Update Homebrew tap
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sha() { grep " moth-$1.tar.gz\$" dist/release/checksums.txt | cut -d ' ' -f 1; }
+
+          sed \
+            -e "s|{{VERSION}}|$VERSION|g" \
+            -e "s|{{SHA256_DARWIN_ARM64}}|$(sha darwin-arm64)|" \
+            -e "s|{{SHA256_DARWIN_X64}}|$(sha darwin-x64)|" \
+            -e "s|{{SHA256_LINUX_ARM64}}|$(sha linux-arm64)|" \
+            -e "s|{{SHA256_LINUX_X64}}|$(sha linux-x64)|" \
+            .github/homebrew/moth.rb.tmpl > moth.rb
+
+          git clone --depth 1 "https://x-access-token:$HOMEBREW_TAP_TOKEN@github.com/dyarkin/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp moth.rb tap/Formula/moth.rb
+
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/moth.rb
+          git commit -m "moth $VERSION"
+          git push

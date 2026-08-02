@@ -6,6 +6,25 @@ title: Getting Started
 
 This guide creates one module that manages `~/.gitconfig`.
 
+## 0. Install Moth
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/dyarkin/moth/main/install.sh | sh
+```
+
+Or with Homebrew:
+
+```sh
+brew install dyarkin/tap/moth
+```
+
+The script installs into `~/.local/bin` and tells you if that directory is not on
+your `PATH`. Check the install with:
+
+```sh
+moth --version
+```
+
 ## 1. Create a module
 
 ```sh

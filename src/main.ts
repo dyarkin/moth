@@ -2,12 +2,14 @@ import { Command } from 'commander';
 import { registerCommands } from '@core/commands';
 import { printError } from '@core/commands/output';
 import { isMothError } from '@shared/errors';
+import { MOTH_VERSION } from '@shared/version';
 
 const program = new Command();
 
 program
   .name('moth')
-  .description('CLI tool for managing and composing config files.');
+  .description('CLI tool for managing and composing config files.')
+  .version(MOTH_VERSION);
 
 registerCommands(program);
 
