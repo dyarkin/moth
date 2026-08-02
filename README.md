@@ -10,7 +10,9 @@ Keeping dotfiles in a git repo and symlinking them works until the same file nee
 
 Moth splits each config into a template plus the values it needs. The template is shared; the values are swapped by enabling a *preset*.
 
-## The main use case
+## Use case examples
+
+### Same file, different values per machine
 
 One `.gitconfig` template:
 
@@ -45,6 +47,35 @@ moth sync
 `~/.gitconfig` is now a symlink to a file rendered with the work email. On the personal machine you skip that command and get the personal one. Same template, same repo, no branches.
 
 Presets can also be grouped, so only one of them is active at a time — put `presets/os/macos.yaml` and `presets/os/linux.yaml` next to each other, and enabling one disables the other.
+
+### Same text, many files
+
+Some content has to exist in several files at once: the same aliases in `~/.zshrc` and `~/.bashrc`, the same rules handed to two tools that each insist on their own file name and location. Copy-pasting means every later edit has to be repeated everywhere, and one copy always drifts.
+
+Write the text once as a *snippet*, then keep each template thin.
+
+`~/.moth/shell/snippets/aliases.sh`:
+
+```sh
+alias gs='git status -sb'
+alias ll='ls -lah'
+```
+
+`~/.moth/shell/templates/.zshrc`:
+
+```sh
+{{ snippet("aliases") }}
+
+export EDITOR=nvim
+```
+
+`~/.moth/shell/templates/.bashrc`:
+
+```sh
+{{ snippet("aliases") }}
+```
+
+Edit the snippet, run `moth sync`, and both files are regenerated. Snippets can be nested for organisation — `snippets/git/aliases.sh` is used as `{{ snippet("git/aliases") }}` — and can take arguments that override variables for that one insertion: `{{ snippet("section", { title: "Editor" }) }}`.
 
 ## Install
 
